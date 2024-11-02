@@ -22,7 +22,7 @@
         app:layout_constraintVertical_bias="0.099" />
 
     <Button
-        android:id="@+id/button"
+        android:id="@+id/button1"
         android:layout_width="203dp"
         android:layout_height="209dp"
         android:layout_marginBottom="92dp"
@@ -43,7 +43,7 @@
         android:text="@string/_0"
         android:textColor="#607D8B"
         android:textSize="60sp"
-        app:layout_constraintBottom_toTopOf="@+id/button"
+        app:layout_constraintBottom_toTopOf="@+id/button1"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
@@ -55,11 +55,11 @@
         android:layout_width="66dp"
         android:layout_height="46dp"
         android:backgroundTint="#009688"
+        app:icon="@drawable/list"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="@+id/button"
-        app:layout_constraintTop_toBottomOf="@+id/button"
+        app:layout_constraintEnd_toEndOf="@+id/button1"
+        app:layout_constraintTop_toBottomOf="@+id/button1"
         app:layout_constraintVertical_bias="0.666"
-        app:icon="@android:drawable/ic_popup_sync"
         tools:ignore="SpeakableTextPresentCheck,TouchTargetSizeCheck" />
 
     <Button
@@ -67,10 +67,10 @@
         android:layout_width="66dp"
         android:layout_height="46dp"
         android:backgroundTint="#009688"
-        app:icon="@android:drawable/ic_popup_sync"
+        app:icon="@drawable/reload"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="@+id/button"
-        app:layout_constraintTop_toBottomOf="@+id/button"
+        app:layout_constraintStart_toStartOf="@+id/button1"
+        app:layout_constraintTop_toBottomOf="@+id/button1"
         app:layout_constraintVertical_bias="0.666"
         tools:ignore="SpeakableTextPresentCheck,TouchTargetSizeCheck" />
 
