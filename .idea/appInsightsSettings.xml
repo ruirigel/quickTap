@@ -22,10 +22,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="PLACEHOLDER" />
-                  <option name="mobileSdkAppId" value="" />
-                  <option name="projectId" value="" />
-                  <option name="projectNumber" value="" />
+                  <option name="appId" value="com.rmrbranco.quicktap" />
+                  <option name="mobileSdkAppId" value="1:560133913208:android:cb6028626e0d201a24cb8d" />
+                  <option name="projectId" value="quicktap-99dd1" />
+                  <option name="projectNumber" value="560133913208" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />
