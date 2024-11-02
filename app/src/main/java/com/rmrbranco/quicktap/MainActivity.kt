@@ -1,5 +1,6 @@
 package com.rmrbranco.quicktap
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.widget.Button
@@ -13,6 +14,9 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
+import android.provider.Settings
+import android.util.Log
+import com.google.firebase.FirebaseApp
 
 class MainActivity : AppCompatActivity() {
 
@@ -32,12 +36,17 @@ class MainActivity : AppCompatActivity() {
         }
 
         // Inicializar o Firebase Database
+        FirebaseApp.initializeApp(this)
+        // Referência ao Firebase Database
         database = FirebaseDatabase.getInstance().reference
 
-        val button1 = findViewById<Button>(R.id.button1)
+        val button1 = findViewById<Button>(R.id.button1) // Botão para incrementar o contador
         val button3 = findViewById<Button>(R.id.button3)  // Botão para reiniciar o contador
         val textView1 = findViewById<TextView>(R.id.textView1)  // Exibe o número de cliques
         val textView2 = findViewById<TextView>(R.id.textView2)  // Exibe a contagem decrescente
+
+        // Obter o ID único do dispositivo
+        val deviceId = retrieveDeviceId()
 
         // Função para inicializar o timer
         fun initializeTimer() {
@@ -54,7 +63,7 @@ class MainActivity : AppCompatActivity() {
                     button1.isEnabled = false  // Desativa o botão quando a contagem termina
                     isTimerRunning = false  // Atualiza a flag
                     // Salvar o recorde de cliques no Firebase quando o tempo acabar
-                    checkAndSaveRecord(clickCount)
+                    checkAndSaveRecord(deviceId, clickCount)
                 }
             }
         }
@@ -96,31 +105,68 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // Função para verificar e salvar o novo recorde
-    private fun checkAndSaveRecord(clickCount: Int) {
-        // Referência para o nó onde o recorde é salvo
-        val recordRef = database.child("highest_click_record")
+    // Função para verificar e salvar o recorde no Firebase
+    private fun checkAndSaveRecord(deviceId: String, clickCount: Int) {
+        val recordRef = database.child("data/$deviceId")
 
-        // Recupera o recorde atual para comparar
         recordRef.addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                val currentRecord = snapshot.child("click_count").getValue(Int::class.java) ?: 0
+                if (!snapshot.exists()) {
+                    Log.d("Firebase", "Registro não encontrado, criando novo para o ID: $deviceId")
 
-                // Se o clickCount atual for maior que o recorde, salva o novo recorde
-                if (clickCount > currentRecord) {
                     recordRef.setValue(
                         mapOf(
                             "click_count" to clickCount,
                             "timestamp" to System.currentTimeMillis()
                         )
-                    )
+                    ).addOnCompleteListener { task ->
+                        if (task.isSuccessful) {
+                            Log.d("Firebase", "Novo registro criado para o ID: $deviceId")
+                        } else {
+                            Log.e(
+                                "Firebase",
+                                "Falha ao criar novo registro: ${task.exception?.message}"
+                            )
+                        }
+                    }
+                } else {
+                    Log.d("Firebase", "Registro encontrado, verificando se o clickCount é maior")
+
+                    val currentRecord = snapshot.child("click_count").getValue(Int::class.java) ?: 0
+                    if (clickCount > currentRecord) {
+                        Log.d(
+                            "Firebase",
+                            "Novo recorde encontrado, atualizando para o ID: $deviceId"
+                        )
+
+                        recordRef.setValue(
+                            mapOf(
+                                "click_count" to clickCount,
+                                "timestamp" to System.currentTimeMillis()
+                            )
+                        ).addOnCompleteListener { task ->
+                            if (task.isSuccessful) {
+                                Log.d("Firebase", "Recorde atualizado para o ID: $deviceId")
+                            } else {
+                                Log.e(
+                                    "Firebase",
+                                    "Falha ao atualizar recorde: ${task.exception?.message}"
+                                )
+                            }
+                        }
+                    }
                 }
             }
 
             override fun onCancelled(error: DatabaseError) {
-                // Tratar possíveis erros aqui
+                Log.e("Firebase", "Error retrieving data: ${error.message}")
             }
         })
+    }
+
+    @SuppressLint("HardwareIds")
+    private fun retrieveDeviceId(): String {
+        return Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)
     }
 
 }
