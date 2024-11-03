@@ -6,4 +6,8 @@
     <string name="initial_count">100</string>
     <string name="final_count">0</string>
     <string name="click_count">0</string>
+    <string name="score_board">Score Board</string>
+    <string name="ranking">Ranking:</string>
+    <string name="score">Score:</string>
+    <string name="username">Username</string>
 </resources>
