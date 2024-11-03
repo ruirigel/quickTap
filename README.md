@@ -23,3 +23,5 @@ Check the scoreboard to view your rank and compare your score with other players
 * Android 8.0 (Oreo)+
 
 Get ready to put your reflexes to the test with Quick Tap, and track your performance on the scoreboard!
+
+<img src="./prtsc1.jpg" width=30% height=30%> <img src="./prtsc2.jpg" width=30% height=30%>
