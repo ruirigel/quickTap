@@ -19,4 +19,7 @@ Check the scoreboard to view your rank and compare your score with other players
 * Kotlin: Core language for Android development.
 * ConstraintLayout: Ensures a responsive and adaptive layout across devices.
 
+## Requirements
+* Android 8.0 (Oreo)
+
 Get ready to put your reflexes to the test with Quick Tap, and track your performance on the scoreboard!
