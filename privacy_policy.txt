@@ -1,0 +1,52 @@
+Privacy Policy - Quick Tap
+
+
+1. Information We Collect
+
+Quick Tap collects the following information to improve the user experience:
+
+Usage data: information about user interactions with the game (scores, play times, etc.).
+
+Device information: such as device type, operating system version, and unique device identifiers.
+
+Network data: information related to the internet connection, such as IP address.
+
+
+2. How We Use Your Information
+
+The data collected is used for:
+
+Providing and improving the user experience in the game.
+
+Analyzing game performance and fixing technical issues.
+
+Personalizing content and features according to your preferences.
+
+
+3. Sharing Your Information
+
+We do not share your personal information(Device information or Network data) with third parties, except when:
+
+Required by law.
+
+Necessary to protect the rights, property, or safety of Quick Tap or its users.
+
+
+4. Security
+
+We implement security measures to protect the data stored in our application. However, no security system is foolproof, and we cannot guarantee the absolute security of your information.
+
+
+5. Your Rights
+
+You have the right to access, correct, or delete your personal data. Contact us if you have any questions or requests regarding your data.
+
+
+6. Changes to the Privacy Policy
+
+We may update this policy from time to time. We will notify you of any significant changes through the application or other appropriate communication channels.
+
+
+7. Contact
+
+If you have any questions about this Privacy Policy, please contact us at rmrbranco@gmail.com
