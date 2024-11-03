@@ -34,6 +34,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var database: DatabaseReference  // Referência ao Firebase Database
     val currentTimeMillis = System.currentTimeMillis()
     val ldt = LocalDateTime.now().toString()
+    private lateinit var deviceId: String  // Declare a variável deviceId
+    private var isDialogShowing = false // Flag para verificar se o diálogo está sendo exibido
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,7 +60,7 @@ class MainActivity : AppCompatActivity() {
         val textView2 = findViewById<TextView>(R.id.textView2)  // Exibe a contagem decrescente
 
         // Obter o ID único do dispositivo
-        val deviceId = retrieveDeviceId()
+        deviceId = retrieveDeviceId()  // Inicializa a variável deviceId
 
         // Função para inicializar o timer
         fun initializeTimer() {
@@ -191,10 +194,15 @@ class MainActivity : AppCompatActivity() {
     // Função para exibir o diálogo de score board
     @SuppressLint("InflateParams")
     private fun showScoreBoardDialog() {
+        if (isDialogShowing) return // Não abre o diálogo se já estiver aberto
+
         val dialog = Dialog(this)
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_score_board, null)
         dialog.setContentView(dialogView)
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        // Atualiza a variável para indicar que o diálogo está aberto
+        isDialogShowing = true
 
         // Referência ao Firebase Database
         val databaseRef = FirebaseDatabase.getInstance().reference.child("data")
@@ -205,71 +213,105 @@ class MainActivity : AppCompatActivity() {
         // Obter a ListView do layout do diálogo
         val listView = dialogView.findViewById<ListView>(R.id.score_list_view)
 
-        // Adiciona um listener para ler os dados de uma vez
-        databaseRef.addListenerForSingleValueEvent(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                for (userSnapshot in snapshot.children) {
-                    // Ler os dados de cada usuário
-                    val username = userSnapshot.child("username").getValue(String::class.java) ?: "Unknown"
-                    val score = userSnapshot.child("click_count").getValue(Int::class.java) ?: 0
+        // Primeiro, buscamos o username do dispositivo atual
+        val currentDeviceId = deviceId // Assumindo que você já tem o deviceId definido
+        databaseRef.child(currentDeviceId).child("username").get()
+            .addOnSuccessListener { snapshot ->
+                val currentUsername = snapshot.getValue(String::class.java) ?: "Unknown"
 
-                    // Adiciona o item à lista de pontuação
-                    scoreList.add(ScoreItem(username, score, 0))  // O ranking será atribuído depois
+                // Adiciona um listener para ler os dados de pontuação
+                databaseRef.addListenerForSingleValueEvent(object : ValueEventListener {
+                    override fun onDataChange(snapshot: DataSnapshot) {
+                        for (userSnapshot in snapshot.children) {
+                            // Ler os dados de cada usuário
+                            val username =
+                                userSnapshot.child("username").getValue(String::class.java)
+                                    ?: "Unknown"
+                            val score =
+                                userSnapshot.child("click_count").getValue(Int::class.java) ?: 0
+
+                            // Adiciona o item à lista de pontuação
+                            scoreList.add(
+                                ScoreItem(
+                                    username,
+                                    score,
+                                    0
+                                )
+                            )  // O ranking será atribuído depois
+                        }
+
+                        // Ordena a lista de pontuação do maior para o menor e atribui o ranking
+                        scoreList.sortByDescending { it.score }
+                        scoreList.forEachIndexed { index, scoreItem ->
+                            scoreItem.ranking = index + 1  // Define o ranking
+                        }
+
+                        // Configura o adaptador da ListView com o contexto correto
+                        val adapter = ScoreAdapter(this@MainActivity, scoreList, currentUsername)
+                        listView.adapter = adapter
+
+                        // Exibe o diálogo após carregar os dados
+                        dialog.show()
+                    }
+
+                    override fun onCancelled(error: DatabaseError) {
+                        Log.e("Firebase", "Erro ao buscar dados: ${error.message}")
+                    }
+                })
+
+                dialog.setOnDismissListener {
+                    // Atualiza a variável quando o diálogo é fechado
+                    isDialogShowing = false
                 }
+            }
+    }
 
-                // Ordena a lista de pontuação do maior para o menor e atribui o ranking
-                scoreList.sortByDescending { it.score }
-                scoreList.forEachIndexed { index, scoreItem ->
-                    scoreItem.ranking = index + 1  // Define o ranking
-                }
+    // Classe ScoreAdapter para gerenciar a exibição dos itens na ListView
+    class ScoreAdapter(
+        private val context: Context,
+        private val scores: List<ScoreItem>,
+        private val currentUsername: String // Adicione esta propriedade
+    ) : BaseAdapter() {
 
-                // Configura o adaptador da ListView com o contexto correto
-                val adapter = ScoreAdapter(this@MainActivity, scoreList)
-                listView.adapter = adapter
+        override fun getCount(): Int {
+            return scores.size
+        }
 
-                // Exibe o diálogo após carregar os dados
-                dialog.show()
+        override fun getItem(position: Int): Any {
+            return scores[position]
+        }
+
+        override fun getItemId(position: Int): Long {
+            return position.toLong()
+        }
+
+        @SuppressLint("SetTextI18n")
+        override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
+            val view: View = convertView ?: LayoutInflater.from(context)
+                .inflate(R.layout.list_item_score, parent, false)
+
+            // Obter as referências dos TextViews do layout
+            val rankingText = view.findViewById<TextView>(R.id.ranking)
+            val usernameText = view.findViewById<TextView>(R.id.username)
+            val scoreText = view.findViewById<TextView>(R.id.score)
+
+            // Obter o ScoreItem atual
+            val scoreItem = getItem(position) as ScoreItem
+
+            // Definir os valores nos TextViews
+            rankingText.text = scoreItem.ranking.toString()
+            usernameText.text = scoreItem.username
+            scoreText.text = scoreItem.score.toString()
+
+            // Verifica se o item pertence ao usuário atual
+            if (scoreItem.username == currentUsername) {
+                usernameText.text = "you - ${scoreItem.username}"
+
             }
 
-            override fun onCancelled(error: DatabaseError) {
-                Log.e("Firebase", "Erro ao buscar dados: ${error.message}")
-            }
-        })
+            return view
+        }
     }
 }
 
-// Classe ScoreAdapter para gerenciar a exibição dos itens na ListView
-class ScoreAdapter(private val context: Context, private val scores: List<MainActivity.ScoreItem>) : BaseAdapter() {
 
-    override fun getCount(): Int {
-        return scores.size
-    }
-
-    override fun getItem(position: Int): Any {
-        return scores[position]
-    }
-
-    override fun getItemId(position: Int): Long {
-        return position.toLong()
-    }
-
-    override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
-        val view: View = convertView ?: LayoutInflater.from(context).inflate(R.layout.list_item_score, parent, false)
-
-        // Obter as referências dos TextViews do layout
-        val rankingText = view.findViewById<TextView>(R.id.ranking)
-        val usernameText = view.findViewById<TextView>(R.id.username)
-        val scoreText = view.findViewById<TextView>(R.id.score)
-
-        // Obter o ScoreItem atual
-        val scoreItem = getItem(position) as MainActivity.ScoreItem
-
-        // Definir os valores nos TextViews
-        rankingText.text = scoreItem.ranking.toString()
-        usernameText.text = scoreItem.username
-        scoreText.text = scoreItem.score.toString()
-
-        return view
-    }
-
-}
