@@ -23,7 +23,10 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.BaseAdapter
 import android.widget.ListView
+import android.widget.Toast
 import com.google.firebase.FirebaseApp
+import java.net.HttpURLConnection
+import java.net.URL
 import java.time.LocalDateTime
 
 class MainActivity : AppCompatActivity() {
@@ -98,8 +101,20 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        // Configura o clique do botão de score board
         button2.setOnClickListener {
-            showScoreBoardDialog()
+
+            // Verifica a conexão com a internet antes de mostrar o score board
+            val isConnected = checkInternetConnection()
+            if (isConnected) {
+                showScoreBoardDialog()
+            } else {
+                Toast.makeText(
+                    this@MainActivity,
+                    "Conexão à internet: $isConnected",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
         }
 
         // Configura o clique do botão de reinício
@@ -312,6 +327,21 @@ class MainActivity : AppCompatActivity() {
             return view
         }
     }
+
+    // Função para verificar a conexão com a internet
+    private fun checkInternetConnection(): Boolean {
+        return try {
+            val url = URL("https://clients3.google.com/generate_204")
+            val connection = url.openConnection() as HttpURLConnection
+            connection.requestMethod = "GET"
+            connection.connectTimeout = 3000 // Tempo limite de conexão
+            connection.connect()
+            connection.responseCode == 204
+        } catch (e: Exception) {
+            false
+        }
+    }
+
 }
 
 
