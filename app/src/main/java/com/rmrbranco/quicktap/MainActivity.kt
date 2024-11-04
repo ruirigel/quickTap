@@ -25,6 +25,10 @@ import android.widget.BaseAdapter
 import android.widget.ListView
 import android.widget.Toast
 import com.google.firebase.FirebaseApp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.net.HttpURLConnection
 import java.net.URL
 import java.time.LocalDateTime
@@ -105,15 +109,20 @@ class MainActivity : AppCompatActivity() {
         button2.setOnClickListener {
 
             // Verifica a conexão com a internet antes de mostrar o score board
-            val isConnected = checkInternetConnection()
-            if (isConnected) {
-                showScoreBoardDialog()
-            } else {
-                Toast.makeText(
-                    this@MainActivity,
-                    "Conexão à internet: $isConnected",
-                    Toast.LENGTH_SHORT
-                ).show()
+            CoroutineScope(Dispatchers.Main).launch {
+                val isConnected = withContext(Dispatchers.IO) {
+                    checkInternetConnection()
+                }
+                if (isConnected) {
+                    showScoreBoardDialog()
+                } else {
+                    @Suppress("KotlinConstantConditions")
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Conexão à internet: $isConnected",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             }
         }
 
@@ -334,10 +343,12 @@ class MainActivity : AppCompatActivity() {
             val url = URL("https://clients3.google.com/generate_204")
             val connection = url.openConnection() as HttpURLConnection
             connection.requestMethod = "GET"
-            connection.connectTimeout = 3000 // Tempo limite de conexão
+            connection.connectTimeout = 3000
+            connection.readTimeout = 3000
             connection.connect()
             connection.responseCode == 204
         } catch (e: Exception) {
+            Log.e("NetworkCheck", "Erro ao verificar conexão: ${e.message}")
             false
         }
     }
