@@ -53,7 +53,7 @@
     <Button
         android:id="@+id/button2"
         android:layout_width="66dp"
-        android:layout_height="46dp"
+        android:layout_height="48dp"
         android:backgroundTint="#009688"
         app:icon="@drawable/list"
         app:iconTint="@android:color/white"
@@ -61,12 +61,13 @@
         app:layout_constraintEnd_toEndOf="@+id/button1"
         app:layout_constraintTop_toBottomOf="@+id/button1"
         app:layout_constraintVertical_bias="0.666"
+        android:contentDescription="@string/score_board"
         tools:ignore="SpeakableTextPresentCheck,TouchTargetSizeCheck" />
 
     <Button
         android:id="@+id/button3"
         android:layout_width="66dp"
-        android:layout_height="46dp"
+        android:layout_height="48dp"
         android:backgroundTint="#009688"
         app:icon="@drawable/reload"
         app:iconTint="@android:color/white"
@@ -74,6 +75,7 @@
         app:layout_constraintStart_toStartOf="@+id/button1"
         app:layout_constraintTop_toBottomOf="@+id/button1"
         app:layout_constraintVertical_bias="0.666"
+        android:contentDescription="@string/reload"
         tools:ignore="SpeakableTextPresentCheck,TouchTargetSizeCheck" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
