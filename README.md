@@ -25,3 +25,6 @@ Check the scoreboard to view your rank and compare your score with other players
 Get ready to put your reflexes to the test with Quick Tap, and track your performance on the scoreboard!
 
 <img src="./prtsc2.jpg" width=30% height=30% alt=""> <img src="./prtsc1.jpg" width=30% height=30% alt="">
+
+## Google Play
+There is currently a build of Quick Tap available on Google Play. https://play.google.com/store/apps/details?id=com.rmrbranco.quicktap
