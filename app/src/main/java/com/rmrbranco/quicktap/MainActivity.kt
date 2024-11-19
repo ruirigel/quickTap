@@ -21,6 +21,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.AnimationUtils
 import android.widget.BaseAdapter
 import android.widget.ListView
 import android.widget.Toast
@@ -43,7 +44,7 @@ class MainActivity : AppCompatActivity() {
     val ldt = LocalDateTime.now().toString()
     private lateinit var deviceId: String  // Declare a variável deviceId
     private var isDialogShowing = false // Flag para verificar se o diálogo está sendo exibido
-
+    private var isAnimating = true // Controle da animação
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -65,6 +66,12 @@ class MainActivity : AppCompatActivity() {
         val button3 = findViewById<Button>(R.id.button3)  // Botão para reiniciar o contador
         val textView1 = findViewById<TextView>(R.id.textView1)  // Exibe o número de cliques
         val textView2 = findViewById<TextView>(R.id.textView2)  // Exibe a contagem decrescente
+
+        // Animação no aro
+        val borderView = findViewById<View>(R.id.borderView)
+        val pulseAnimation = AnimationUtils.loadAnimation(this, R.anim.pulse_animation)
+        borderView.startAnimation(pulseAnimation)
+        isAnimating = true
 
         // Obter o ID único do dispositivo
         deviceId = retrieveDeviceId()  // Inicializa a variável deviceId
@@ -94,6 +101,15 @@ class MainActivity : AppCompatActivity() {
 
         // Configura o clique do botão de incremento
         button1.setOnClickListener {
+
+            // Verifica se a animação do aro está em execução
+            if (isAnimating) {
+                // Cancela o animacao do aro
+                borderView.clearAnimation()
+                borderView.visibility = View.GONE
+                isAnimating = false
+            }
+
             // Incrementa o contador de cliques e exibe no textView1
             clickCount++
             textView1.text = clickCount.toString()
@@ -128,6 +144,14 @@ class MainActivity : AppCompatActivity() {
 
         // Configura o clique do botão de reinício
         button3.setOnClickListener {
+
+            // Reinicia a animação do aro
+            if (!isAnimating) {
+                borderView.clearAnimation()
+                borderView.startAnimation(pulseAnimation)
+                isAnimating = true
+            }
+
             // Cancela o timer se estiver rodando
             if (isTimerRunning) {
                 countDownTimer.cancel()

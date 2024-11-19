@@ -12,8 +12,8 @@ android {
         applicationId = "com.rmrbranco.quicktap"
         minSdk = 26
         targetSdk = 35
-        versionCode = 20241104
-        versionName = "v20241104"
+        versionCode = 20241119
+        versionName = "v20241119"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
