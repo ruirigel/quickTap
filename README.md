@@ -26,6 +26,8 @@ Get ready to put your reflexes to the test with Quick Tap, and track your perfor
 
 <img src="./prtsc1.png" width=30% height=30% alt=""> <img src="./prtsc2.png" width=30% height=30% alt="">
 
+[Screen_recording_20241119_210510.webm](https://github.com/user-attachments/assets/1e2c4e5e-ff29-43ac-8325-25019a890db6)
+
 ## Quick tap releases
 This repository hosts the public pre-releases. The pre-releases(apk) are signed that you can deploy to a device. Later, as soon as the new features are implemented and tested, the pre-releases will be released on Google Play.
 
