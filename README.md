@@ -24,7 +24,7 @@ Check the scoreboard to view your rank and compare your score with other players
 
 Get ready to put your reflexes to the test with Quick Tap, and track your performance on the scoreboard!
 
-<img src="./prtsc2.jpg" width=30% height=30% alt=""> <img src="./prtsc1.jpg" width=30% height=30% alt="">
+<img src="./prtsc2.png" width=30% height=30% alt=""> <img src="./prtsc1.png" width=30% height=30% alt="">
 
 ## Quick tap releases
 This repository hosts the public pre-releases. The pre-releases(apk) are signed that you can deploy to a device. Later, as soon as the new features are implemented and tested, the pre-releases will be released on Google Play.
