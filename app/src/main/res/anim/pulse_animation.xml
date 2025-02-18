@@ -1,10 +1,22 @@
-<scale xmlns:android="http://schemas.android.com/apk/res/android"
-    android:duration="1000"
-    android:fromXScale="1.0"
-    android:fromYScale="1.0"
-    android:toXScale="1.2"
-    android:toYScale="1.2"
+<set xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Animação de escala (crescimento) com duração total de 2 segundos -->
+    <scale
+        android:duration="2000"
+    android:fromXScale="0.8"
+    android:fromYScale="0.8"
+    android:toXScale="1.1"
+    android:toYScale="1.1"
     android:pivotX="50%"
     android:pivotY="50%"
-    android:repeatMode="reverse"
+    android:repeatMode="restart"
     android:repeatCount="infinite" />
+
+    <!-- Animação de opacidade (desaparecer suavemente no meio da escala) -->
+    <alpha
+        android:duration="1000"
+        android:fromAlpha="1.0"
+        android:toAlpha="0.0"
+        android:startOffset="1000"
+        android:repeatMode="restart"
+        android:repeatCount="infinite" />
+</set>

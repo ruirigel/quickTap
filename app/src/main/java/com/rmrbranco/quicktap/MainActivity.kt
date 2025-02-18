@@ -92,6 +92,7 @@ class MainActivity : AppCompatActivity() {
                     isTimerRunning = false  // Atualiza a flag
                     // Salvar o recorde de cliques no Firebase quando o tempo acabar
                     checkAndSaveRecord(deviceId, clickCount)
+                    button1.setText(R.string.end)
                 }
             }
         }
@@ -108,6 +109,8 @@ class MainActivity : AppCompatActivity() {
                 borderView.clearAnimation()
                 borderView.visibility = View.GONE
                 isAnimating = false
+                // Atualiza o texto do botão para "Tap"
+                button1.setText(R.string.tap)
             }
 
             // Incrementa o contador de cliques e exibe no textView1
@@ -150,6 +153,7 @@ class MainActivity : AppCompatActivity() {
                 borderView.clearAnimation()
                 borderView.startAnimation(pulseAnimation)
                 isAnimating = true
+                button1.setText(R.string.go)
             }
 
             // Cancela o timer se estiver rodando
