@@ -3,6 +3,11 @@ package com.rmrbranco.quicktap
 import android.annotation.SuppressLint
 import android.app.Dialog
 import android.content.Context
+import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.widget.Button
@@ -25,11 +30,15 @@ import android.view.animation.AnimationUtils
 import android.widget.BaseAdapter
 import android.widget.ListView
 import android.widget.Toast
+import androidx.core.content.FileProvider
 import com.google.firebase.FirebaseApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 import java.time.LocalDateTime
@@ -46,6 +55,7 @@ class MainActivity : AppCompatActivity() {
     private var isDialogShowing = false // Flag para verificar se o diálogo está sendo exibido
     private var isAnimating = true // Controle da animação
 
+    @SuppressLint("SetTextI18n")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -63,7 +73,8 @@ class MainActivity : AppCompatActivity() {
 
         val button1 = findViewById<Button>(R.id.button1) // Botão para incrementar o contador
         val button2 = findViewById<Button>(R.id.button2) // Botão para mostrar o score board
-        val button3 = findViewById<Button>(R.id.button3)  // Botão para reiniciar o contador
+        val button3 = findViewById<Button>(R.id.button3) // Botão para reiniciar o contador
+        val button4 = findViewById<Button>(R.id.button4) // Botão para compartilhar o score
         val textView1 = findViewById<TextView>(R.id.textView1)  // Exibe o número de cliques
         val textView2 = findViewById<TextView>(R.id.textView2)  // Exibe a contagem decrescente
 
@@ -80,6 +91,7 @@ class MainActivity : AppCompatActivity() {
         fun initializeTimer() {
             countDownTimer = object :
                 CountDownTimer(100000, 1000) {  // 100 segundos, decrementando a cada 1 segundo
+                @SuppressLint("SetTextI18n")
                 override fun onTick(millisUntilFinished: Long) {
                     val secondsRemaining = millisUntilFinished / 1000
                     textView2.text =
@@ -173,6 +185,11 @@ class MainActivity : AppCompatActivity() {
             // Recria o timer
             initializeTimer()
         }
+
+        button4.setOnClickListener {
+            shareScoreImage(this, 150) // Substitua pelo Score real do usuário
+        }
+
     }
 
     // Função para verificar e salvar o recorde no Firebase
@@ -304,6 +321,11 @@ class MainActivity : AppCompatActivity() {
 
                         // Exibe o diálogo após carregar os dados
                         dialog.show()
+                        dialog.window?.setLayout(
+                            (resources.displayMetrics.widthPixels * 0.9).toInt()
+                                .coerceIn(600, 1100), // Mínimo 600px, Máximo 900px
+                            1500 // Altura fixa
+                        )
                     }
 
                     override fun onCancelled(error: DatabaseError) {
@@ -322,7 +344,7 @@ class MainActivity : AppCompatActivity() {
     class ScoreAdapter(
         private val context: Context,
         private val scores: List<ScoreItem>,
-        private val currentUsername: String // Adicione esta propriedade
+        private val currentUsername: String, // Adicione esta propriedade
     ) : BaseAdapter() {
 
         override fun getCount(): Int {
@@ -379,6 +401,69 @@ class MainActivity : AppCompatActivity() {
             Log.e("NetworkCheck", "Erro ao verificar conexão: ${e.message}")
             false
         }
+    }
+
+    private fun shareScoreImage(context: Context, score: Int) {
+        val width = 800
+        val height = 600
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        val paint = Paint()
+
+        // Fundo da imagem
+        paint.color = Color.parseColor("#009688") // Verde
+        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
+
+        // Texto "My QuickTap score"
+        paint.color = Color.WHITE
+        paint.textSize = 60f
+        paint.textAlign = Paint.Align.CENTER
+        canvas.drawText("My QuickTap score:", width / 2f, 200f, paint)
+
+        // Texto do Score
+        paint.textSize = 100f
+        paint.color = Color.YELLOW
+        canvas.drawText(score.toString(), width / 2f, 350f, paint)
+
+        // 1. Criação do arquivo onde a imagem será salva
+        val file = File(
+            context.cacheDir,
+            "QuickTap_score_image.png"
+        ) // Usa cacheDir do contexto, se necessário
+
+        // 2. Salva a imagem no arquivo
+        try {
+            val fos = FileOutputStream(file)
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos)
+            fos.close()
+        } catch (e: IOException) {
+            e.printStackTrace()
+            return
+        }
+
+        // 3. Criação da URI usando o FileProvider
+        val uri = FileProvider.getUriForFile(
+            context, // Contexto
+            "com.rmrbranco.quicktap.fileprovider", // O nome do seu FileProvider declarado no AndroidManifest
+            file // O arquivo a ser compartilhado
+        )
+
+        // 4. Criação do Intent de compartilhamento
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "image/png" // Tipo da imagem
+            putExtra(Intent.EXTRA_STREAM, uri) // Envia a imagem
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) // Permissão de leitura
+        }
+
+        // 5. Texto a ser compartilhado junto com a imagem
+        val shareMessage = "My QuickTap score: $score!\nCan you beat me?"
+        intent.putExtra(Intent.EXTRA_TEXT, shareMessage) // Envia o texto junto com a imagem
+
+        // 6. Criar o chooser de compartilhamento
+        val chooser = Intent.createChooser(intent, "Share via")
+
+        // 7. Inicia a Activity para o compartilhamento
+        context.startActivity(chooser)
     }
 
 }

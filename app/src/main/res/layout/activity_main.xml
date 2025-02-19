@@ -65,14 +65,15 @@
         android:id="@+id/button2"
         android:layout_width="66dp"
         android:layout_height="58dp"
+        android:layout_marginEnd="68dp"
         android:backgroundTint="#009688"
+        android:contentDescription="@string/score_board"
         app:icon="@drawable/list"
         app:iconTint="@android:color/white"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="@+id/button1"
         app:layout_constraintTop_toBottomOf="@+id/button1"
         app:layout_constraintVertical_bias="0.666"
-        android:contentDescription="@string/score_board"
         tools:ignore="SpeakableTextPresentCheck,TouchTargetSizeCheck" />
 
     <Button
@@ -80,13 +81,29 @@
         android:layout_width="66dp"
         android:layout_height="58dp"
         android:backgroundTint="#009688"
+        android:contentDescription="@string/reload"
         app:icon="@drawable/reload"
         app:iconTint="@android:color/white"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="@+id/button1"
+        app:layout_constraintEnd_toStartOf="@+id/button2"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/button1"
         app:layout_constraintVertical_bias="0.666"
-        android:contentDescription="@string/reload"
+        tools:ignore="SpeakableTextPresentCheck,TouchTargetSizeCheck" />
+
+    <Button
+        android:id="@+id/button4"
+        android:layout_width="66dp"
+        android:layout_height="58dp"
+        android:backgroundTint="#009688"
+        android:contentDescription="@string/share"
+        app:icon="@drawable/share"
+        app:iconTint="@android:color/white"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/button2"
+        app:layout_constraintTop_toBottomOf="@+id/button1"
+        app:layout_constraintVertical_bias="0.666"
         tools:ignore="SpeakableTextPresentCheck,TouchTargetSizeCheck" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
