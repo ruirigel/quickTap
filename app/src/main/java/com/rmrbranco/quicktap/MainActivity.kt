@@ -485,7 +485,6 @@ class MainActivity : AppCompatActivity() {
         context.startActivity(chooser)
     }
 
-
     private fun fetchUserScoreAndShare(context: Context, deviceId: String) {
         val recordRef = database.child("data/$deviceId")
 
