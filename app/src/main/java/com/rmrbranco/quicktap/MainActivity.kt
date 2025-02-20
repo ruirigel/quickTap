@@ -8,6 +8,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.RectF
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.widget.Button
@@ -30,6 +31,7 @@ import android.view.animation.AnimationUtils
 import android.widget.BaseAdapter
 import android.widget.ListView
 import android.widget.Toast
+import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import com.google.firebase.FirebaseApp
 import kotlinx.coroutines.CoroutineScope
@@ -187,7 +189,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         button4.setOnClickListener {
-            shareScoreImage(this, 150) // Substitua pelo Score real do usuário
+            fetchUserScoreAndShare(this, deviceId)
         }
 
     }
@@ -403,35 +405,55 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun shareScoreImage(context: Context, score: Int) {
-        val width = 800
-        val height = 600
+    private fun shareScoreImage(context: Context, username: String, score: Int) {
+        val width = 600
+        val height = 500
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         val paint = Paint()
 
         // Fundo da imagem
-        paint.color = Color.parseColor("#009688") // Verde
+        paint.color = Color.parseColor("#2B2D30") // Fundo escuro
         canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
 
-        // Texto "My QuickTap score"
+        // Desenhar o ícone da app no topo
+        val appIcon =
+            ContextCompat.getDrawable(context, R.mipmap.ic_launcher) // Substitua pelo ícone real
+        appIcon?.let {
+            val iconBitmap =
+                Bitmap.createBitmap(it.intrinsicWidth, it.intrinsicHeight, Bitmap.Config.ARGB_8888)
+            val iconCanvas = Canvas(iconBitmap)
+            it.setBounds(0, 0, iconCanvas.width, iconCanvas.height)
+            it.draw(iconCanvas)
+
+            val iconSize = 120  // Define um tamanho para o ícone
+            val left = (width - iconSize) / 2f
+            val top = 30f
+            canvas.drawBitmap(
+                iconBitmap,
+                null,
+                RectF(left, top, left + iconSize, top + iconSize),
+                null
+            )
+        }
+
+        // Desenhar o username do jogador
         paint.color = Color.WHITE
-        paint.textSize = 60f
+        paint.textSize = 50f
         paint.textAlign = Paint.Align.CENTER
-        canvas.drawText("My QuickTap score:", width / 2f, 200f, paint)
+        canvas.drawText(username, width / 2f, 225f, paint)
+
+        // Texto "My QuickTap score"
+        paint.textSize = 55f
+        canvas.drawText("My QuickTap score:", width / 2f, 290f, paint)
 
         // Texto do Score
-        paint.textSize = 100f
+        paint.textSize = 90f
         paint.color = Color.YELLOW
-        canvas.drawText(score.toString(), width / 2f, 350f, paint)
+        canvas.drawText("$score taps", width / 2f, 390f, paint)
 
-        // 1. Criação do arquivo onde a imagem será salva
-        val file = File(
-            context.cacheDir,
-            "QuickTap_score_image.png"
-        ) // Usa cacheDir do contexto, se necessário
-
-        // 2. Salva a imagem no arquivo
+        // Criar e salvar a imagem
+        val file = File(context.cacheDir, "QuickTap_score_image.png")
         try {
             val fos = FileOutputStream(file)
             bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos)
@@ -441,30 +463,53 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        // 3. Criação da URI usando o FileProvider
-        val uri = FileProvider.getUriForFile(
-            context, // Contexto
-            "com.rmrbranco.quicktap.fileprovider", // O nome do seu FileProvider declarado no AndroidManifest
-            file // O arquivo a ser compartilhado
-        )
+        // Criar URI para compartilhar
+        val uri = FileProvider.getUriForFile(context, "com.rmrbranco.quicktap.fileprovider", file)
 
-        // 4. Criação do Intent de compartilhamento
+        // Criar Intent de compartilhamento
         val intent = Intent(Intent.ACTION_SEND).apply {
-            type = "image/png" // Tipo da imagem
-            putExtra(Intent.EXTRA_STREAM, uri) // Envia a imagem
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) // Permissão de leitura
+            type = "image/png"
+            putExtra(Intent.EXTRA_STREAM, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
 
-        // 5. Texto a ser compartilhado junto com a imagem
-        val shareMessage = "My QuickTap score: $score!\nCan you beat me?"
-        intent.putExtra(Intent.EXTRA_TEXT, shareMessage) // Envia o texto junto com a imagem
+        // Adicionar o texto junto
+        val shareMessage =
+            "Can you beat me?\nQuickTap https://shorturl.at/kntDf"
+        intent.putExtra(Intent.EXTRA_TEXT, shareMessage)
 
-        // 6. Criar o chooser de compartilhamento
+        // Criar o chooser
         val chooser = Intent.createChooser(intent, "Share via")
 
-        // 7. Inicia a Activity para o compartilhamento
+        // Iniciar o compartilhamento
         context.startActivity(chooser)
     }
+
+
+    private fun fetchUserScoreAndShare(context: Context, deviceId: String) {
+        val recordRef = database.child("data/$deviceId")
+
+        recordRef.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                if (snapshot.exists()) {
+                    val username =
+                        snapshot.child("username").getValue(String::class.java) ?: "Guest"
+                    val score = snapshot.child("click_count").getValue(Int::class.java) ?: 0
+
+                    // Agora chamamos a função para gerar e compartilhar a imagem
+                    shareScoreImage(context, username, score)
+                } else {
+                    Toast.makeText(context, "No score found for this device!", Toast.LENGTH_SHORT)
+                        .show()
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Log.e("Firebase", "Error retrieving data: ${error.message}")
+            }
+        })
+    }
+
 
 }
 
