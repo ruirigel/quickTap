@@ -7,6 +7,7 @@ Quick Tap is a fast-paced reaction game designed to test players' speed and prec
 * Sleek Design: Minimalist and engaging UI, optimized for focus and quick interaction.
 * Competitive Mode: Play with friends and see who has the fastest fingers.
 * Scoreboard: Track your ranking compared to other players and monitor your own progress over time.
+* Share Score: Easily share your high scores with friends on social media. 
 
 ## How to Play
 Start a new game and get ready!
