@@ -5,10 +5,10 @@ import android.app.Dialog
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
-import android.graphics.RectF
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.widget.Button
@@ -405,59 +405,46 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    @Suppress("UNUSED_PARAMETER")
     private fun shareScoreImage(context: Context, username: String, score: Int) {
-        val width = 600
-        val height = 500
+        val width = 834
+        val height = 834
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
-        val paint = Paint()
 
-        // Fundo da imagem
-        paint.color = Color.parseColor("#2B2D30") // Fundo escuro
-        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
+        // Carregar e desenhar a imagem de fundo do drawable
+        val backgroundBitmap = BitmapFactory.decodeResource(context.resources, R.drawable.background)
+        val scaledBackground = Bitmap.createScaledBitmap(backgroundBitmap, width, height, true)
+        canvas.drawBitmap(scaledBackground, 0f, 0f, null)
 
-        // Desenhar o ícone da app no topo
-        val appIcon =
-            ContextCompat.getDrawable(context, R.mipmap.ic_launcher) // Substitua pelo ícone real
-        appIcon?.let {
-            val iconBitmap =
-                Bitmap.createBitmap(it.intrinsicWidth, it.intrinsicHeight, Bitmap.Config.ARGB_8888)
-            val iconCanvas = Canvas(iconBitmap)
-            it.setBounds(0, 0, iconCanvas.width, iconCanvas.height)
-            it.draw(iconCanvas)
-
-            val iconSize = 120  // Define um tamanho para o ícone
-            val left = (width - iconSize) / 2f
-            val top = 30f
-            canvas.drawBitmap(
-                iconBitmap,
-                null,
-                RectF(left, top, left + iconSize, top + iconSize),
-                null
-            )
+        // Carregar e desenhar o ícone da app no topo
+        ContextCompat.getDrawable(context, R.mipmap.ic_launcher)?.let { appIcon ->
+            appIcon.setBounds(30, 30, 150, 150) // Define a posição e o tamanho direto
+            appIcon.draw(canvas)
         }
 
-        // Desenhar o username do jogador
-        paint.color = Color.WHITE
-        paint.textSize = 50f
-        paint.textAlign = Paint.Align.CENTER
-        canvas.drawText(username, width / 2f, 225f, paint)
+        // Configuração única do Paint
+        val paint = Paint().apply {
+            color = Color.WHITE
+            textAlign = Paint.Align.CENTER
+        }
 
-        // Texto "My QuickTap score"
-        paint.textSize = 55f
-        canvas.drawText("My QuickTap score:", width / 2f, 290f, paint)
+        // Desenhar textos no canvas
+        // paint.textSize = 50f
+        // canvas.drawText(username, width / 2f, 225f, paint)
+        // canvas.drawText("My QuickTap score:", width / 2f, 290f, paint)
 
-        // Texto do Score
-        paint.textSize = 90f
-        paint.color = Color.YELLOW
-        canvas.drawText("$score taps", width / 2f, 390f, paint)
+        // Desenhar o score maior
+        paint.textSize = 120f
+        canvas.drawText("$score", width / 2f, 390f, paint)
+        canvas.drawText("Taps!", width / 2f, 510f, paint)
 
         // Criar e salvar a imagem
         val file = File(context.cacheDir, "QuickTap_score_image.png")
         try {
-            val fos = FileOutputStream(file)
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos)
-            fos.close()
+            FileOutputStream(file).use { fos ->
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos)
+            }
         } catch (e: IOException) {
             e.printStackTrace()
             return
@@ -470,19 +457,13 @@ class MainActivity : AppCompatActivity() {
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = "image/png"
             putExtra(Intent.EXTRA_STREAM, uri)
+            putExtra(Intent.EXTRA_TITLE, "QuickTap - Share Score")
+            putExtra(Intent.EXTRA_TEXT, "Can you beat me?\nQuickTap https://shorturl.at/kntDf")
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
 
-        // Adicionar o texto junto
-        val shareMessage =
-            "Can you beat me?\nQuickTap https://shorturl.at/kntDf"
-        intent.putExtra(Intent.EXTRA_TEXT, shareMessage)
-
-        // Criar o chooser
-        val chooser = Intent.createChooser(intent, "Share via")
-
-        // Iniciar o compartilhamento
-        context.startActivity(chooser)
+        // Criar o chooser e compartilhar
+        context.startActivity(Intent.createChooser(intent, "Share via"))
     }
 
     private fun fetchUserScoreAndShare(context: Context, deviceId: String) {
