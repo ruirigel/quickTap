@@ -2,6 +2,7 @@ package com.rmrbranco.quicktap
 
 import android.annotation.SuppressLint
 import android.app.Dialog
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
@@ -9,19 +10,12 @@ import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.net.Uri
 import android.os.Bundle
 import android.os.CountDownTimer
-import android.widget.Button
-import android.widget.TextView
-import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.DatabaseReference
-import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.ValueEventListener
+import android.os.Handler
+import android.os.Looper
+import android.provider.MediaStore
 import android.provider.Settings
 import android.util.Log
 import android.view.LayoutInflater
@@ -29,18 +23,25 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.animation.AnimationUtils
 import android.widget.BaseAdapter
+import android.widget.Button
 import android.widget.ListView
+import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import androidx.core.content.FileProvider
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.google.firebase.FirebaseApp
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.DatabaseReference
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
-import java.io.FileOutputStream
-import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 import java.time.LocalDateTime
@@ -56,6 +57,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var deviceId: String  // Declare a variável deviceId
     private var isDialogShowing = false // Flag para verificar se o diálogo está sendo exibido
     private var isAnimating = true // Controle da animação
+    private var isSharing = false // Flag para evitar múltiplos toques
 
     @SuppressLint("SetTextI18n")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -407,63 +409,99 @@ class MainActivity : AppCompatActivity() {
 
     @Suppress("UNUSED_PARAMETER")
     private fun shareScoreImage(context: Context, username: String, score: Int) {
-        val width = 834
-        val height = 834
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
+        if (isSharing) return
 
-        // Carregar e desenhar a imagem de fundo do drawable
-        val backgroundBitmap = BitmapFactory.decodeResource(context.resources, R.drawable.background)
-        val scaledBackground = Bitmap.createScaledBitmap(backgroundBitmap, width, height, true)
-        canvas.drawBitmap(scaledBackground, 0f, 0f, null)
+        isSharing = true
 
-        // Carregar e desenhar o ícone da app no topo
+        val originalWidth = 834
+        val originalHeight = 834
+
+        // Criar uma nova imagem maior (ex: 1200x1200) para evitar corte na preview
+        val newSize = 1200
+        val bitmapWithPadding = Bitmap.createBitmap(newSize, newSize, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmapWithPadding)
+
+        // Preencher com um fundo transparente
+        canvas.drawColor(Color.TRANSPARENT)
+
+        // Carregar e desenhar a imagem original no centro
+        val originalBitmap =
+            Bitmap.createBitmap(originalWidth, originalHeight, Bitmap.Config.ARGB_8888)
+        val originalCanvas = Canvas(originalBitmap)
+
+        val backgroundBitmap =
+            BitmapFactory.decodeResource(context.resources, R.drawable.background)
+        val scaledBackground =
+            Bitmap.createScaledBitmap(backgroundBitmap, originalWidth, originalHeight, true)
+        originalCanvas.drawBitmap(scaledBackground, 0f, 0f, null)
+
+        // Adicionar o ícone da app
         ContextCompat.getDrawable(context, R.mipmap.ic_launcher)?.let { appIcon ->
-            appIcon.setBounds(30, 30, 150, 150) // Define a posição e o tamanho direto
-            appIcon.draw(canvas)
+            appIcon.setBounds(30, 30, 150, 150)
+            appIcon.draw(originalCanvas)
         }
 
-        // Configuração única do Paint
         val paint = Paint().apply {
             color = Color.WHITE
             textAlign = Paint.Align.CENTER
+            textSize = 120f
         }
 
-        // Desenhar textos no canvas
-        // paint.textSize = 50f
-        // canvas.drawText(username, width / 2f, 225f, paint)
-        // canvas.drawText("My QuickTap score:", width / 2f, 290f, paint)
+        // Escrever o Score
+        originalCanvas.drawText("$score", originalWidth / 2f, 390f, paint)
+        originalCanvas.drawText("Taps!", originalWidth / 2f, 510f, paint)
 
-        // Desenhar o score maior
-        paint.textSize = 120f
-        canvas.drawText("$score", width / 2f, 390f, paint)
-        canvas.drawText("Taps!", width / 2f, 510f, paint)
+        // Agora desenhamos a imagem original no centro do bitmap maior
+        val left = (newSize - originalWidth) / 2f
+        val top = (newSize - originalHeight) / 2f
+        canvas.drawBitmap(originalBitmap, left, top, null)
 
-        // Criar e salvar a imagem
-        val file = File(context.cacheDir, "QuickTap_score_image.png")
-        try {
-            FileOutputStream(file).use { fos ->
-                bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos)
+        // Salvar no MediaStore
+        val imageUri = saveImageToMediaStore(context, bitmapWithPadding)
+
+        if (imageUri != null) {
+            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                type = "image/png"
+                putExtra(Intent.EXTRA_STREAM, imageUri)
+                putExtra(Intent.EXTRA_TITLE, "QuickTap - Share Score")
+                putExtra(Intent.EXTRA_TEXT, "Can you beat me?\nQuickTap https://shorturl.at/kntDf")
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
-        } catch (e: IOException) {
-            e.printStackTrace()
-            return
+
+            context.startActivity(Intent.createChooser(shareIntent, "Share via"))
+
+            Handler(Looper.getMainLooper()).postDelayed({
+                isSharing = false
+            }, 1000)
+
+        } else {
+            Toast.makeText(context, "Erro ao salvar imagem", Toast.LENGTH_SHORT).show()
+            isSharing = false
+        }
+    }
+
+    private fun saveImageToMediaStore(context: Context, bitmap: Bitmap): Uri? {
+        val timestamp = System.currentTimeMillis() // Adiciona um timestamp único
+        val fileName = "QuickTap_score_$timestamp.png" // Garante nome único
+
+        val contentValues = ContentValues().apply {
+            put(MediaStore.Images.Media.MIME_TYPE, "image/png")
+            put(MediaStore.Images.Media.DISPLAY_NAME, fileName) // Usa o nome único
+            put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/QuickTap")
         }
 
-        // Criar URI para compartilhar
-        val uri = FileProvider.getUriForFile(context, "com.rmrbranco.quicktap.fileprovider", file)
+        val uri = context.contentResolver.insert(
+            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+            contentValues
+        )
 
-        // Criar Intent de compartilhamento
-        val intent = Intent(Intent.ACTION_SEND).apply {
-            type = "image/png"
-            putExtra(Intent.EXTRA_STREAM, uri)
-            putExtra(Intent.EXTRA_TITLE, "QuickTap - Share Score")
-            putExtra(Intent.EXTRA_TEXT, "Can you beat me?\nQuickTap https://shorturl.at/kntDf")
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        uri?.let {
+            context.contentResolver.openOutputStream(it)?.use { outputStream ->
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
+            }
         }
 
-        // Criar o chooser e compartilhar
-        context.startActivity(Intent.createChooser(intent, "Share via"))
+        return uri
     }
 
     private fun fetchUserScoreAndShare(context: Context, deviceId: String) {
@@ -489,7 +527,6 @@ class MainActivity : AppCompatActivity() {
             }
         })
     }
-
 
 }
 
