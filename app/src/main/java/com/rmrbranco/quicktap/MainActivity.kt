@@ -449,8 +449,8 @@ class MainActivity : AppCompatActivity() {
 
         // Desenhar textos no canvas
         // paint.textSize = 50f
-        // canvas.drawText(username, width / 2f, 225f, paint)
-        // canvas.drawText("My QuickTap score:", width / 2f, 290f, paint)
+        // originalCanvas.drawText(username, originalWidth / 2f, 225f, paint)
+        // originalCanvas.drawText("My QuickTap score:", originalWidth / 2f, 290f, paint)
 
         // Escrever o Score
         originalCanvas.drawText("$score", originalWidth / 2f, 390f, paint)
