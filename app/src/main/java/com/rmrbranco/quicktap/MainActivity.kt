@@ -2,6 +2,7 @@ package com.rmrbranco.quicktap
 
 import android.annotation.SuppressLint
 import android.app.Dialog
+import android.content.ContentUris
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
@@ -33,6 +34,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.google.firebase.FirebaseApp
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
@@ -52,8 +54,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var countDownTimer: CountDownTimer  // Declaração do timer
     private var isTimerRunning = false  // Flag para verificar se o timer está ativo
     private lateinit var database: DatabaseReference  // Referência ao Firebase Database
-    val currentTimeMillis = System.currentTimeMillis()
-    val ldt = LocalDateTime.now().toString()
+    val currentTimeMillis = System.currentTimeMillis() // Obtém o tempo atual em milissegundos
+    val ldt = LocalDateTime.now().toString() // Obtém a data e hora atual
     private lateinit var deviceId: String  // Declare a variável deviceId
     private var isDialogShowing = false // Flag para verificar se o diálogo está sendo exibido
     private var isAnimating = true // Controle da animação
@@ -72,6 +74,10 @@ class MainActivity : AppCompatActivity() {
 
         // Inicializar o Firebase Database
         FirebaseApp.initializeApp(this)
+
+        // Autenticação anônima
+        signInAnonymously()
+
         // Referência ao Firebase Database
         database = FirebaseDatabase.getInstance().reference
 
@@ -486,22 +492,40 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun saveImageToMediaStore(context: Context, bitmap: Bitmap): Uri? {
-        val timestamp = System.currentTimeMillis() // Adiciona um timestamp único
-        val fileName = "QuickTap_score_$timestamp.png" // Garante nome único
+        val fileName = "QuickTap_score.png" // Sempre o mesmo nome
 
+        val contentResolver = context.contentResolver
+
+        // Verificar se a imagem já existe e excluir antes de salvar a nova
+        val existingUri = contentResolver.query(
+            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+            arrayOf(MediaStore.Images.Media._ID),
+            "${MediaStore.Images.Media.DISPLAY_NAME} = ?",
+            arrayOf(fileName),
+            null
+        )?.use { cursor ->
+            if (cursor.moveToFirst()) {
+                val id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID))
+                ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id)
+            } else {
+                null
+            }
+        }
+
+        existingUri?.let { contentResolver.delete(it, null, null) }
+
+        // Inserir a nova imagem
         val contentValues = ContentValues().apply {
             put(MediaStore.Images.Media.MIME_TYPE, "image/png")
-            put(MediaStore.Images.Media.DISPLAY_NAME, fileName) // Usa o nome único
+            put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
             put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/QuickTap")
         }
 
-        val uri = context.contentResolver.insert(
-            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-            contentValues
-        )
+        val uri =
+            contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
 
         uri?.let {
-            context.contentResolver.openOutputStream(it)?.use { outputStream ->
+            contentResolver.openOutputStream(it)?.use { outputStream ->
                 bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
             }
         }
@@ -532,6 +556,25 @@ class MainActivity : AppCompatActivity() {
             }
         })
     }
+
+    // Autenticação anônima
+    private fun signInAnonymously() {
+        val auth = FirebaseAuth.getInstance()
+        auth.signInAnonymously()
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    val user = auth.currentUser
+                    if (user != null) {
+                        // Usuário autenticado com sucesso, você pode acessar o banco de dados agora
+                        val userId = user.uid
+                        Log.d("Firebase", "User authenticated successfully. UID: $userId")
+                    }
+                } else {
+                    Log.e("Firebase", "Authentication error: ${task.exception?.message}")
+                }
+            }
+    }
+
 
 }
 
