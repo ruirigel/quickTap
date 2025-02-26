@@ -59,6 +59,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var deviceId: String  // Declare a variável deviceId
     private var isDialogShowing = false // Flag para verificar se o diálogo está sendo exibido
     private var isAnimating = true // Controle da animação
+    private var isProgressAnimating = false // Controle da animação
     private var isSharing = false // Flag para evitar múltiplos toques
 
     @SuppressLint("SetTextI18n")
@@ -88,8 +89,14 @@ class MainActivity : AppCompatActivity() {
         val textView1 = findViewById<TextView>(R.id.textView1)  // Exibe o número de cliques
         val textView2 = findViewById<TextView>(R.id.textView2)  // Exibe a contagem decrescente
 
-        // Animação no aro
+        // Encontre a View uma vez e reutilize a variável
         val borderView = findViewById<View>(R.id.borderView)
+
+        // Animação do progresso
+        val progressAnimation = AnimationUtils.loadAnimation(this, R.anim.progress_animation)
+        isProgressAnimating = false
+
+        // Animação no aro (usando a mesma borderView)
         val pulseAnimation = AnimationUtils.loadAnimation(this, R.anim.pulse_animation)
         borderView.startAnimation(pulseAnimation)
         isAnimating = true
@@ -115,6 +122,11 @@ class MainActivity : AppCompatActivity() {
                     // Salvar o recorde de cliques no Firebase quando o tempo acabar
                     checkAndSaveRecord(deviceId, clickCount)
                     button1.setText(R.string.end)
+
+                    // Cancela a animação do progresso
+                    borderView.clearAnimation()
+                    borderView.visibility = View.GONE
+                    isAnimating = false
                 }
             }
         }
@@ -131,6 +143,11 @@ class MainActivity : AppCompatActivity() {
                 borderView.clearAnimation()
                 borderView.visibility = View.GONE
                 isAnimating = false
+
+                // Inicia a animação do progresso
+                borderView.startAnimation(progressAnimation)
+                isProgressAnimating = true
+
                 // Atualiza o texto do botão para "Tap"
                 button1.setText(R.string.tap)
             }
@@ -172,6 +189,12 @@ class MainActivity : AppCompatActivity() {
 
             // Reinicia a animação do aro
             if (!isAnimating) {
+
+                // Cancela a animação do progresso
+                borderView.clearAnimation()
+                borderView.visibility = View.VISIBLE
+                isProgressAnimating = false
+
                 borderView.clearAnimation()
                 borderView.startAnimation(pulseAnimation)
                 isAnimating = true

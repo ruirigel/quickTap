@@ -1,0 +1,22 @@
+<set xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Animação de escala (diminuição de maior para menor) com duração total de 2 segundos -->
+    <scale
+        android:duration="2000"
+        android:fromXScale="1.6"
+        android:fromYScale="1.6"
+        android:toXScale="0.8"
+        android:toYScale="0.8"
+        android:pivotX="50%"
+        android:pivotY="50%"
+        android:repeatMode="restart"
+        android:repeatCount="infinite" />
+
+    <!-- Animação de opacidade (aumento de opacidade de 0 a 1) no meio da escala -->
+    <alpha
+        android:duration="1000"
+        android:fromAlpha="0.0"
+        android:toAlpha="1.0"
+        android:startOffset="1000"
+        android:repeatMode="restart"
+        android:repeatCount="infinite" />
+</set>
