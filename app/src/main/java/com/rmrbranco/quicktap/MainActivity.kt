@@ -139,6 +139,7 @@ class MainActivity : AppCompatActivity() {
 
             // Verifica se a animação do aro está em execução
             if (isAnimating) {
+
                 // Cancela o animacao do aro
                 borderView.clearAnimation()
                 borderView.visibility = View.GONE
@@ -192,10 +193,9 @@ class MainActivity : AppCompatActivity() {
 
                 // Cancela a animação do progresso
                 borderView.clearAnimation()
-                borderView.visibility = View.VISIBLE
+                borderView.visibility = View.GONE
                 isProgressAnimating = false
 
-                borderView.clearAnimation()
                 borderView.startAnimation(pulseAnimation)
                 isAnimating = true
                 button1.setText(R.string.go)
