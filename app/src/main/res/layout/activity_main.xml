@@ -21,31 +21,36 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.099" />
 
-    <View
-        android:id="@+id/borderView"
-        android:layout_width="243dp"
-        android:layout_height="243dp"
-        android:background="@drawable/round_border"
-        app:layout_constraintBottom_toBottomOf="@+id/button1"
-        app:layout_constraintEnd_toEndOf="@+id/button1"
-        app:layout_constraintStart_toStartOf="@+id/button1"
-        app:layout_constraintTop_toTopOf="@+id/button1" />
-
-    <Button
-        android:id="@+id/button1"
-        android:layout_width="203dp"
-        android:layout_height="209dp"
-        android:layout_marginBottom="92dp"
-        android:backgroundTint="#009688"
-        android:text="@string/go"
-        android:textColor="@android:color/background_light"
-        android:textSize="48sp"
-        android:textStyle="bold"
+    <!-- FrameLayout para agrupar borderView e button1 -->
+    <FrameLayout
+        android:id="@+id/frameContainer"
+        android:layout_width="263dp"
+        android:layout_height="263dp"
+        android:layout_marginBottom="82dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/textView1"
-        app:layout_constraintVertical_bias="0.5" />
+        app:layout_constraintVertical_bias="0.5">
+
+        <View
+            android:id="@+id/borderView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_margin="10dp"
+            android:background="@drawable/round_border" />
+
+        <Button
+            android:id="@+id/button1"
+            android:layout_width="203dp"
+            android:layout_height="209dp"
+            android:layout_gravity="center"
+            android:backgroundTint="#009688"
+            android:text="@string/go"
+            android:textColor="@android:color/background_light"
+            android:textSize="48sp"
+            android:textStyle="bold" />
+    </FrameLayout>
 
     <TextView
         android:id="@+id/textView1"
@@ -54,7 +59,7 @@
         android:text="@string/_0"
         android:textColor="#607D8B"
         android:textSize="60sp"
-        app:layout_constraintBottom_toTopOf="@+id/button1"
+        app:layout_constraintBottom_toTopOf="@+id/frameContainer"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
@@ -65,15 +70,16 @@
         android:id="@+id/button2"
         android:layout_width="66dp"
         android:layout_height="58dp"
-        android:layout_marginEnd="68dp"
+        android:layout_marginEnd="96dp"
+        android:layout_marginBottom="24dp"
         android:backgroundTint="#009688"
         android:contentDescription="@string/score_board"
         app:icon="@drawable/list"
         app:iconTint="@android:color/white"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="@+id/button1"
-        app:layout_constraintTop_toBottomOf="@+id/button1"
-        app:layout_constraintVertical_bias="0.666"
+        app:layout_constraintEnd_toEndOf="@+id/frameContainer"
+        app:layout_constraintTop_toBottomOf="@+id/frameContainer"
+        app:layout_constraintVertical_bias="0.671"
         tools:ignore="SpeakableTextPresentCheck,TouchTargetSizeCheck" />
 
     <Button
@@ -81,13 +87,14 @@
         android:layout_width="66dp"
         android:layout_height="58dp"
         android:layout_marginEnd="32dp"
+        android:layout_marginBottom="24dp"
         android:backgroundTint="#009688"
         android:contentDescription="@string/reload"
         app:icon="@drawable/reload"
         app:iconTint="@android:color/white"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/button2"
-        app:layout_constraintTop_toBottomOf="@+id/button1"
+        app:layout_constraintTop_toBottomOf="@+id/frameContainer"
         app:layout_constraintVertical_bias="0.666"
         tools:ignore="SpeakableTextPresentCheck,TouchTargetSizeCheck" />
 
@@ -96,13 +103,14 @@
         android:layout_width="66dp"
         android:layout_height="58dp"
         android:layout_marginStart="32dp"
+        android:layout_marginBottom="24dp"
         android:backgroundTint="#009688"
         android:contentDescription="@string/share"
         app:icon="@drawable/share"
         app:iconTint="@android:color/white"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toEndOf="@+id/button2"
-        app:layout_constraintTop_toBottomOf="@+id/button1"
+        app:layout_constraintTop_toBottomOf="@+id/frameContainer"
         app:layout_constraintVertical_bias="0.666"
         tools:ignore="SpeakableTextPresentCheck,TouchTargetSizeCheck" />
 

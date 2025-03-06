@@ -47,6 +47,8 @@ import kotlinx.coroutines.withContext
 import java.net.HttpURLConnection
 import java.net.URL
 import java.time.LocalDateTime
+import androidx.core.graphics.createBitmap
+import androidx.core.graphics.scale
 
 class MainActivity : AppCompatActivity() {
 
@@ -447,7 +449,7 @@ class MainActivity : AppCompatActivity() {
 
         // Criar uma nova imagem maior (ex: 1200x1200) para evitar corte na preview
         val newSize = 1200
-        val bitmapWithPadding = Bitmap.createBitmap(newSize, newSize, Bitmap.Config.ARGB_8888)
+        val bitmapWithPadding = createBitmap(newSize, newSize)
         val canvas = Canvas(bitmapWithPadding)
 
         // Preencher com um fundo transparente
@@ -455,13 +457,13 @@ class MainActivity : AppCompatActivity() {
 
         // Carregar e desenhar a imagem original no centro
         val originalBitmap =
-            Bitmap.createBitmap(originalWidth, originalHeight, Bitmap.Config.ARGB_8888)
+            createBitmap(originalWidth, originalHeight)
         val originalCanvas = Canvas(originalBitmap)
 
         val backgroundBitmap =
             BitmapFactory.decodeResource(context.resources, R.drawable.background)
         val scaledBackground =
-            Bitmap.createScaledBitmap(backgroundBitmap, originalWidth, originalHeight, true)
+            backgroundBitmap.scale(originalWidth, originalHeight)
         originalCanvas.drawBitmap(scaledBackground, 0f, 0f, null)
 
         // Adicionar o ícone da app
