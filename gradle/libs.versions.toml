@@ -1,8 +1,8 @@
 [versions]
-agp = "8.9.0"
+agp = "9.4.1"
 firebaseAuthKtxVersion = "23.2.0"
 firebaseBom = "33.9.0"
-kotlin = "2.0.0"
+kotlin = "2.2.10"
 coreKtx = "1.15.0"
 junit = "4.13.2"
 junitVersion = "1.2.1"

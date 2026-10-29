@@ -11,17 +11,23 @@ import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.media.MediaPlayer
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.os.Handler
 import android.os.Looper
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import android.provider.MediaStore
 import android.provider.Settings
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.Animation
 import android.view.animation.AnimationUtils
 import android.widget.BaseAdapter
 import android.widget.Button
@@ -56,13 +62,22 @@ class MainActivity : AppCompatActivity() {
     private lateinit var countDownTimer: CountDownTimer  // Declaração do timer
     private var isTimerRunning = false  // Flag para verificar se o timer está ativo
     private lateinit var database: DatabaseReference  // Referência ao Firebase Database
-    val currentTimeMillis = System.currentTimeMillis() // Obtém o tempo atual em milissegundos
-    val ldt = LocalDateTime.now().toString() // Obtém a data e hora atual
     private lateinit var deviceId: String  // Declare a variável deviceId
     private var isDialogShowing = false // Flag para verificar se o diálogo está sendo exibido
     private var isAnimating = true // Controle da animação
     private var isProgressAnimating = false // Controle da animação
     private var isSharing = false // Flag para evitar múltiplos toques
+    private var pulseMediaPlayer: MediaPlayer? = null // MediaPlayer para o som da animação pulse
+
+    private val pulseHandler = Handler(Looper.getMainLooper())
+    private val pulseRunnable = object : Runnable {
+        override fun run() {
+            if (isAnimating) {
+                playPulseSound()
+                pulseHandler.postDelayed(this, 2000L) // 2000ms sincronizado com a duração do pulse_animation
+            }
+        }
+    }
 
     @SuppressLint("SetTextI18n")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -98,10 +113,32 @@ class MainActivity : AppCompatActivity() {
         val progressAnimation = AnimationUtils.loadAnimation(this, R.anim.progress_animation)
         isProgressAnimating = false
 
+        // Inicializa o MediaPlayer para o som do pulse
+        pulseMediaPlayer = MediaPlayer.create(this, R.raw.pulse_sound)
+
         // Animação no aro (usando a mesma borderView)
         val pulseAnimation = AnimationUtils.loadAnimation(this, R.anim.pulse_animation)
+        pulseAnimation.setAnimationListener(object : Animation.AnimationListener {
+            override fun onAnimationStart(animation: Animation) {
+                if (isAnimating) {
+                    playPulseSound()
+                }
+            }
+
+            override fun onAnimationRepeat(animation: Animation) {
+                if (isAnimating) {
+                    playPulseSound()
+                }
+            }
+
+            override fun onAnimationEnd(animation: Animation) {}
+        })
+
         borderView.startAnimation(pulseAnimation)
         isAnimating = true
+        playPulseSound()
+        pulseHandler.removeCallbacks(pulseRunnable)
+        pulseHandler.postDelayed(pulseRunnable, 2000L)
 
         // Obter o ID único do dispositivo
         deviceId = retrieveDeviceId()  // Inicializa a variável deviceId
@@ -138,9 +175,14 @@ class MainActivity : AppCompatActivity() {
 
         // Configura o clique do botão de incremento
         button1.setOnClickListener {
+            // Vibra o dispositivo a cada toque para dar feedback táctil
+            vibrateDevice()
 
             // Verifica se a animação do aro está em execução
             if (isAnimating) {
+                // Para o som imediatamente ao começar o jogo e limpa o handler do pulse
+                pulseHandler.removeCallbacks(pulseRunnable)
+                stopPulseSound()
 
                 // Cancela o animacao do aro
                 borderView.clearAnimation()
@@ -201,6 +243,9 @@ class MainActivity : AppCompatActivity() {
                 borderView.startAnimation(pulseAnimation)
                 isAnimating = true
                 button1.setText(R.string.go)
+                playPulseSound()
+                pulseHandler.removeCallbacks(pulseRunnable)
+                pulseHandler.postDelayed(pulseRunnable, 2000L)
             }
 
             // Cancela o timer se estiver rodando
@@ -230,6 +275,10 @@ class MainActivity : AppCompatActivity() {
     // Função para verificar e salvar o recorde no Firebase
     private fun checkAndSaveRecord(deviceId: String, clickCount: Int) {
         val recordRef = database.child("data/$deviceId")
+        val currentUser = FirebaseAuth.getInstance().currentUser
+        val currentUid = currentUser?.uid ?: ""
+        val nowLdt = LocalDateTime.now().toString()
+        val nowMillis = System.currentTimeMillis()
 
         recordRef.addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
@@ -238,9 +287,10 @@ class MainActivity : AppCompatActivity() {
 
                     recordRef.setValue(
                         mapOf(
-                            "username" to "guest$currentTimeMillis",
+                            "username" to "guest$nowMillis",
                             "click_count" to clickCount,
-                            "date" to ldt
+                            "date" to nowLdt,
+                            "uid" to currentUid
                         )
                     ).addOnCompleteListener { task ->
                         if (task.isSuccessful) {
@@ -255,19 +305,23 @@ class MainActivity : AppCompatActivity() {
                 } else {
                     Log.d("Firebase", "Registro encontrado, verificando se o clickCount é maior")
 
-                    val currentRecord = snapshot.child("click_count").getValue(Int::class.java) ?: 0
+                    val rawRecord = snapshot.child("click_count").getValue(Int::class.java) ?: 0
+                    val currentRecord = if (rawRecord in 0..5000) rawRecord else 0
                     if (clickCount > currentRecord) {
                         Log.d(
                             "Firebase",
                             "Novo recorde encontrado, atualizando para o ID: $deviceId"
                         )
 
-                        recordRef.updateChildren(
-                            mapOf(
-                                "click_count" to clickCount,
-                                "date" to ldt
-                            )
-                        ).addOnCompleteListener { task ->
+                        val updates = mutableMapOf<String, Any>(
+                            "click_count" to clickCount,
+                            "date" to nowLdt
+                        )
+                        if (!snapshot.hasChild("uid") && currentUid.isNotEmpty()) {
+                            updates["uid"] = currentUid
+                        }
+
+                        recordRef.updateChildren(updates).addOnCompleteListener { task ->
                             if (task.isSuccessful) {
                                 Log.d("Firebase", "Recorde atualizado para o ID: $deviceId")
                             } else {
@@ -300,79 +354,78 @@ class MainActivity : AppCompatActivity() {
     private fun showScoreBoardDialog() {
         if (isDialogShowing) return // Não abre o diálogo se já estiver aberto
 
-        val dialog = Dialog(this)
-        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_score_board, null)
-        dialog.setContentView(dialogView)
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-
-        // Atualiza a variável para indicar que o diálogo está aberto
         isDialogShowing = true
 
-        // Referência ao Firebase Database
-        val databaseRef = FirebaseDatabase.getInstance().reference.child("data")
+        val dialog = Dialog(this)
+        dialog.setOnDismissListener {
+            isDialogShowing = false
+        }
 
-        // Lista para armazenar os dados de pontuação
-        val scoreList = mutableListOf<ScoreItem>()
+        try {
+            val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_score_board, null)
+            dialog.setContentView(dialogView)
+            dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
 
-        // Obter a ListView do layout do diálogo
-        val listView = dialogView.findViewById<ListView>(R.id.score_list_view)
+            // Lista para armazenar os dados de pontuação
+            val scoreList = mutableListOf<ScoreItem>()
 
-        // Primeiro, buscamos o username do dispositivo atual
-        val currentDeviceId = deviceId // Assumindo que você já tem o deviceId definido
-        databaseRef.child(currentDeviceId).child("username").get()
-            .addOnSuccessListener { snapshot ->
-                val currentUsername = snapshot.getValue(String::class.java) ?: "Unknown"
+            // Obter a ListView do layout do diálogo
+            val listView = dialogView.findViewById<ListView>(R.id.score_list_view)
 
-                // Adiciona um listener para ler os dados de pontuação
-                databaseRef.addListenerForSingleValueEvent(object : ValueEventListener {
-                    override fun onDataChange(snapshot: DataSnapshot) {
-                        for (userSnapshot in snapshot.children) {
-                            // Ler os dados de cada usuário
-                            val username =
-                                userSnapshot.child("username").getValue(String::class.java)
-                                    ?: "Unknown"
-                            val score =
-                                userSnapshot.child("click_count").getValue(Int::class.java) ?: 0
+            // Referência ao Firebase Database
+            val databaseRef = FirebaseDatabase.getInstance().reference.child("data")
 
-                            // Adiciona o item à lista de pontuação
-                            scoreList.add(
-                                ScoreItem(
-                                    username,
-                                    score,
-                                    0
-                                )
-                            )  // O ranking será atribuído depois
+            // Obter os dados atualizados diretamente do servidor Firebase
+            val currentDeviceId = deviceId
+            databaseRef.get().addOnSuccessListener { snapshot ->
+                try {
+                    val currentUsername =
+                        snapshot.child(currentDeviceId).child("username").getValue(String::class.java)
+                            ?: "Unknown"
+
+                    for (userSnapshot in snapshot.children) {
+                        val username =
+                            userSnapshot.child("username").getValue(String::class.java) ?: "Unknown"
+                        val rawScore =
+                            userSnapshot.child("click_count").getValue(Int::class.java) ?: 0
+
+                        // Considera apenas pontuações legítimas (entre 0 e 5000)
+                        if (rawScore in 0..5000) {
+                            scoreList.add(ScoreItem(username, rawScore, 0))
                         }
+                    }
 
-                        // Ordena a lista de pontuação do maior para o menor e atribui o ranking
-                        scoreList.sortByDescending { it.score }
-                        scoreList.forEachIndexed { index, scoreItem ->
-                            scoreItem.ranking = index + 1  // Define o ranking
-                        }
+                    // Ordena a lista de pontuação do maior para o menor e atribui o ranking
+                    scoreList.sortByDescending { it.score }
+                    scoreList.forEachIndexed { index, scoreItem ->
+                        scoreItem.ranking = index + 1
+                    }
 
-                        // Configura o adaptador da ListView com o contexto correto
-                        val adapter = ScoreAdapter(this@MainActivity, scoreList, currentUsername)
-                        listView.adapter = adapter
+                    // Configura o adaptador da ListView com o contexto correto
+                    val adapter = ScoreAdapter(this@MainActivity, scoreList, currentUsername)
+                    listView.adapter = adapter
 
-                        // Exibe o diálogo após carregar os dados
+                    // Exibe o diálogo após carregar os dados
+                    if (!isFinishing && !isDestroyed) {
                         dialog.show()
                         dialog.window?.setLayout(
                             (resources.displayMetrics.widthPixels * 0.9).toInt()
-                                .coerceIn(600, 1100), // Mínimo 600px, Máximo 900px
-                            1500 // Altura fixa
+                                .coerceIn(600, 1100),
+                            1500
                         )
                     }
-
-                    override fun onCancelled(error: DatabaseError) {
-                        Log.e("Firebase", "Erro ao buscar dados: ${error.message}")
-                    }
-                })
-
-                dialog.setOnDismissListener {
-                    // Atualiza a variável quando o diálogo é fechado
+                } catch (e: Exception) {
+                    Log.e("Firebase", "Erro ao processar dados do scoreboard: ${e.message}")
                     isDialogShowing = false
                 }
+            }.addOnFailureListener { error ->
+                Log.e("Firebase", "Erro ao buscar dados: ${error.message}")
+                isDialogShowing = false
             }
+        } catch (e: Exception) {
+            Log.e("Firebase", "Erro ao abrir diálogo: ${e.message}")
+            isDialogShowing = false
+        }
     }
 
     // Classe ScoreAdapter para gerenciar a exibição dos itens na ListView
@@ -415,7 +468,8 @@ class MainActivity : AppCompatActivity() {
             // Verifica se o item pertence ao usuário atual
             if (scoreItem.username == currentUsername) {
                 usernameText.text = "you - ${scoreItem.username}"
-
+            } else {
+                usernameText.text = scoreItem.username
             }
 
             return view
@@ -500,7 +554,7 @@ class MainActivity : AppCompatActivity() {
                 type = "image/png"
                 putExtra(Intent.EXTRA_STREAM, imageUri)
                 putExtra(Intent.EXTRA_TITLE, "QuickTap - Share Score")
-                putExtra(Intent.EXTRA_TEXT, "Can you beat me?\nQuickTap https://shorturl.at/kntDf")
+                putExtra(Intent.EXTRA_TEXT, "Can you beat me?\nQuickTap https://play.google.com/store/apps/details?id=com.rmrbranco.quicktap")
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
 
@@ -566,7 +620,7 @@ class MainActivity : AppCompatActivity() {
                 if (snapshot.exists()) {
                     val username =
                         snapshot.child("username").getValue(String::class.java) ?: "Guest"
-                    val score = snapshot.child("click_count").getValue(Int::class.java) ?: 0
+                    val score = (snapshot.child("click_count").getValue(Int::class.java) ?: 0).coerceAtLeast(0)
 
                     // Agora chamamos a função para gerar e compartilhar a imagem
                     shareScoreImage(context, username, score)
@@ -598,6 +652,107 @@ class MainActivity : AppCompatActivity() {
                     Log.e("Firebase", "Authentication error: ${task.exception?.message}")
                 }
             }
+    }
+
+    private fun playPulseSound() {
+        try {
+            if (pulseMediaPlayer == null) {
+                pulseMediaPlayer = MediaPlayer.create(this, R.raw.pulse_sound)
+            }
+            pulseMediaPlayer?.let { player ->
+                if (player.isPlaying) {
+                    player.pause()
+                }
+                // Inicia com volume 0, salta os primeiros 30ms (para evitar estalidos do ficheiro/decoder) e arranca
+                player.setVolume(0.0f, 0.0f)
+                player.seekTo(30)
+                player.start()
+
+                // Fade In mais longo e suave ao longo de 1 segundo (1000ms)
+                val fadeDuration = 1000L
+                val steps = 20
+                val interval = fadeDuration / steps
+                var currentStep = 0
+
+                val fadeHandler = Handler(Looper.getMainLooper())
+                val fadeRunnable = object : Runnable {
+                    override fun run() {
+                        currentStep++
+                        val volume = currentStep.toFloat() / steps.toFloat()
+                        try {
+                            player.setVolume(volume, volume)
+                            if (currentStep < steps && player.isPlaying) {
+                                fadeHandler.postDelayed(this, interval)
+                            }
+                        } catch (_: Exception) {
+                            // Ignora se o player foi libertado
+                        }
+                    }
+                }
+                fadeHandler.postDelayed(fadeRunnable, interval)
+            }
+        } catch (e: Exception) {
+            Log.e("Audio", "Erro ao reproduzir som da animação: ${e.message}")
+        }
+    }
+
+    private fun stopPulseSound() {
+        try {
+            pulseHandler.removeCallbacks(pulseRunnable)
+            pulseMediaPlayer?.let { player ->
+                if (player.isPlaying) {
+                    player.setVolume(0.0f, 0.0f)
+                    player.pause()
+                }
+                player.seekTo(0)
+            }
+        } catch (e: Exception) {
+            Log.e("Audio", "Erro ao parar som da animação: ${e.message}")
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        pulseHandler.removeCallbacks(pulseRunnable)
+        stopPulseSound()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (isAnimating) {
+            playPulseSound()
+            pulseHandler.removeCallbacks(pulseRunnable)
+            pulseHandler.postDelayed(pulseRunnable, 2000L)
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        pulseMediaPlayer?.release()
+        pulseMediaPlayer = null
+    }
+
+    // Função para fazer o telemóvel vibrar brevemente a cada toque
+    private fun vibrateDevice() {
+        try {
+            val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val vibratorManager = getSystemService(VIBRATOR_MANAGER_SERVICE) as? VibratorManager
+                vibratorManager?.defaultVibrator
+            } else {
+                @Suppress("DEPRECATION")
+                getSystemService(VIBRATOR_SERVICE) as? Vibrator
+            }
+
+            if (vibrator != null && vibrator.hasVibrator()) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    vibrator.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK))
+                } else {
+                    vibrator.vibrate(VibrationEffect.createOneShot(20, VibrationEffect.DEFAULT_AMPLITUDE))
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("Vibration", "Erro ao vibrar: ${e.message}")
+        }
     }
 
 

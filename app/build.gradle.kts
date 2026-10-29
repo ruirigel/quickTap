@@ -6,14 +6,14 @@ plugins {
 
 android {
     namespace = "com.rmrbranco.quicktap"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.rmrbranco.quicktap"
         minSdk = 26
-        targetSdk = 35
-        versionCode = 20250306
-        versionName = "v20250306"
+        targetSdk = 36
+        versionCode = 20261029
+        versionName = "v20261029"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
